@@ -2,7 +2,9 @@ const request = require('request')
 const fs = require('fs-extra')
 const path = require('path')
 const os = require('os')
-require('console.table')
+const chalk = require('chalk')
+const readline = require('readline')
+const getTable = require('console.table').getTable
 
 const CACHE_PATH = path.resolve(os.homedir(), '.fx')
 
@@ -40,7 +42,7 @@ async function getInstantPrice (currency, interval = 'M1') {
   })
   if (base && price && base != 'N/A' && price != 'N/A') {
     delta = +(price - base).toFixed(4)
-    direction = delta > 0 ? '↑' : '↓'
+    direction = delta > 0 ? chalk.bgGreen(' ↑ ') : chalk.bgRed(' ↓ ')
   }
   return {
     currency,
@@ -74,6 +76,23 @@ async function writeCache (obj) {
   }
 }
 
+async function sleep (ts) {
+  return new Promise(resolve => setTimeout(resolve, ts))
+}
+
+async function cout (msg) {
+  let rl
+  if (cout.rl) rl = cout.rl
+  else {
+    cout.rl = rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    })
+  }
+  readline.cursorTo(process.stdout, 0, -1)
+  rl.write(msg.replace(/[\n\r]+$/m, '\n'))
+}
+
 async function start () {
   // let currencies = ['chfjpy', 'usdcad', 'usdjpy']
   let currencies = process.argv.slice(2)
@@ -88,8 +107,14 @@ async function start () {
     if (base && base != 'N/A') cached[currency] = base
     return [currency, base]
   })
-  let prices = await Promise.all(currencies.filter(c => Boolean(c)).map(c => getInstantPrice(c)))
-  console.table(prices)
+
+  let prices
+  var count = 0
+  while (1) {
+    prices = await Promise.all(currencies.filter(c => Boolean(c)).map(c => getInstantPrice(c)))
+    cout(getTable(prices))
+    await sleep(5000)
+  }
   await writeCache(cached)
 }
 
