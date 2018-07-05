@@ -51,8 +51,9 @@ async function getInstantPrice (currency, interval = 'M1') {
   }
   timestamp = Date.now()
   if (getInstantPrice[currency] && getInstantPrice['timestamp'] && price != 'N/A') {
-    speed = Math.abs((getInstantPrice[currency] - price) / (timestamp - getInstantPrice['timestamp']) * 1000) * scale * 10
+    speed = Math.abs((getInstantPrice[currency] - price) * scale * 10 / (timestamp - getInstantPrice['timestamp']) * 1000)
     speed = speed.toFixed(2)
+    speed = speed > 2 ? chalk.red(speed) : speed
     // console.log(currency,
     //   getInstantPrice[currency] - price,
     //   (timestamp - getInstantPrice['timestamp']) / 1000,
