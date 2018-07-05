@@ -35,7 +35,8 @@ async function getInstantPrice (currency, interval = 'M1') {
 }
 
 async function start () {
-  let currencies = process.argv.slice(2) // ['USD/JPY', 'CHF/JPY']
+  let currencies = process.argv.slice(2)
+  if (currencies.length <= 0) currencies = ['AUD/USD', 'EUR/USD', 'GBP/USD', 'USD/CAD', 'USD/CHF', 'EUR/JPY', 'USD/JPY', 'CHF/JPY', 'AUD/JPY']
   let prices = await Promise.all(currencies.map(c => getInstantPrice(c)))
   console.table(prices)
 }
