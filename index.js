@@ -7,12 +7,14 @@ const readline = require('readline')
 const getTable = require('console.table').getTable
 
 const CACHE_PATH = path.resolve(os.homedir(), '.fx')
+let timestamp
 
 async function getInstantPrice (currency, interval = 'M1') {
   if (!currency) return
   var base = currency[1] || 'N/A'
   var delta = 'N/A'
   var direction = 'N/A'
+  var speed = 'N/A'
   currency = currency[0]
   var options = {
     method: 'GET',
@@ -31,7 +33,7 @@ async function getInstantPrice (currency, interval = 'M1') {
       'user-agent': 'Mozilla/5.0 (Linux Android 8.0.0 Pixel 2 XL Build/OPD1.170816.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Mobile Safari/537.36',
     }
   }
-  
+
   let price = await new Promise((resolve, reject) => {
     request(options, function (error, response, body) {
       if (error) throw new Error(error)
@@ -40,16 +42,31 @@ async function getInstantPrice (currency, interval = 'M1') {
       resolve(body.close || 'N/A')
     })
   })
+
+  var scale = currency.indexOf('JPY') >= 0 ? 1e2 : 1e4
+
   if (base && price && base != 'N/A' && price != 'N/A') {
-    delta = +(price - base).toFixed(4)
+    delta = +((price - base) * scale).toFixed(1)
     direction = delta > 0 ? chalk.bgGreen(' ↑ ') : chalk.bgRed(' ↓ ')
   }
+  timestamp = Date.now()
+  if (getInstantPrice[currency] && getInstantPrice['timestamp'] && price != 'N/A') {
+    speed = Math.abs((getInstantPrice[currency] - price) / (timestamp - getInstantPrice['timestamp']) * 1000) * scale * 10
+    speed = speed.toFixed(2)
+    // console.log(currency,
+    //   getInstantPrice[currency] - price,
+    //   (timestamp - getInstantPrice['timestamp']) / 1000,
+    //   speed
+    // )
+  }
+  getInstantPrice[currency] = price
   return {
     currency,
     price,
     base,
     delta,
-    direction
+    direction,
+    speed,
   }
 }
 
@@ -90,11 +107,12 @@ async function cout (msg) {
     })
   }
   readline.cursorTo(process.stdout, 0, -1)
+  readline.clearScreenDown(process.stdout)
   rl.write(msg.replace(/[\n\r]+$/m, '\n'))
 }
 
 async function start () {
-  // let currencies = ['chfjpy', 'usdcad', 'usdjpy']
+  // let currencies = ['chfjpy']
   let currencies = process.argv.slice(2)
   let basePrices = {}
   let cached = await readCache()
@@ -109,11 +127,11 @@ async function start () {
   })
 
   let prices
-  var count = 0
   while (1) {
     prices = await Promise.all(currencies.filter(c => Boolean(c)).map(c => getInstantPrice(c)))
+    getInstantPrice['timestamp'] = timestamp
     cout(getTable(prices))
-    await sleep(5000)
+    await sleep(2500)
   }
   await writeCache(cached)
 }
