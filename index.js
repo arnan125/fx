@@ -2,6 +2,7 @@ const request = require('request')
 require('console.table')
 
 async function getInstantPrice (currency, interval = 'M1') {
+  if (!currency) return
   var options = {
     method: 'GET',
     url: 'https://mds-api.forexfactory.com/bars',
@@ -37,7 +38,12 @@ async function getInstantPrice (currency, interval = 'M1') {
 async function start () {
   let currencies = process.argv.slice(2)
   if (currencies.length <= 0) currencies = ['AUD/USD', 'EUR/USD', 'GBP/USD', 'USD/CAD', 'USD/CHF', 'EUR/JPY', 'USD/JPY', 'CHF/JPY', 'AUD/JPY']
-  let prices = await Promise.all(currencies.map(c => getInstantPrice(c)))
+  currencies = currencies.map(c => {
+    var pairs = String(c).toUpperCase().match(/^([A-Z]{3})(?:\/?)([A-Z]{3})$/)
+    pairs = pairs && pairs.slice(1) || []
+    return pairs.length == 2 ? pairs.join('/') : null
+  })
+  let prices = await Promise.all(currencies.filter(c => Boolean(c)).map(c => getInstantPrice(c)))
   console.table(prices)
 }
 
