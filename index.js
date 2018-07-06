@@ -108,7 +108,7 @@ async function cout (msg) {
     })
   }
   readline.cursorTo(process.stdout, 0, -1)
-  readline.clearScreenDown(process.stdout)
+  readline.clearLine(process.stdout, 0)
   rl.write(msg.replace(/[\n\r]+$/m, '\n'))
 }
 
