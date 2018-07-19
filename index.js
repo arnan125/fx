@@ -107,8 +107,8 @@ async function cout (msg) {
       output: process.stdout
     })
   }
-  readline.cursorTo(process.stdout, 0, -1)
-  readline.clearLine(process.stdout, 0)
+  readline.cursorTo(process.stdout, 0, 0)
+  readline.clearScreenDown(process.stdout)
   rl.write(msg.replace(/[\n\r]+$/m, '\n'))
 }
 
@@ -128,13 +128,19 @@ async function start () {
   })
 
   let prices
+  await writeCache(cached)
   while (1) {
-    prices = await Promise.all(currencies.filter(c => Boolean(c)).map(c => getInstantPrice(c)))
-    getInstantPrice['timestamp'] = timestamp
+    try {
+      prices = await Promise.all(currencies.filter(c => Boolean(c)).map(c => getInstantPrice(c)))
+      getInstantPrice['timestamp'] = timestamp
+    } catch (e) {
+      console.error('出错了', e)
+      await sleep(60 * 1000)
+      continue
+    }
     cout(getTable(prices))
     await sleep(2500)
   }
-  await writeCache(cached)
 }
 
 start()
