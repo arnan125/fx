@@ -36,7 +36,7 @@ async function getInstantPrice (currency, interval = 'M1') {
 
   let price = await new Promise((resolve, reject) => {
     request(options, function (error, response, body) {
-      if (error) throw new Error(error)
+      if (error) return reject(error)
       body = JSON.parse(body)
       body = body.data[0] || {}
       resolve(body.close || 'N/A')
