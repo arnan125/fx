@@ -109,7 +109,7 @@ async function cout (msg) {
   }
   readline.cursorTo(process.stdout, 0, 0)
   readline.clearScreenDown(process.stdout)
-  rl.write(msg.replace(/[\n\r]+$/m, '\n'))
+  rl.write(msg.replace(/[\n\r]+$/m, '\n') + '\n' + new Date())
 }
 
 async function start () {
