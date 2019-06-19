@@ -13,7 +13,7 @@ async function getInstantPrice (currency, interval = 'M1') {
   if (!currency) return
   var base = currency[2] || 'N/A'
   var delta = 'N/A'
-  var direction = 'N/A'
+  var state = 'N/A'
   var speed = 'N/A'
   var op = currency[0]
   currency = currency[1]
@@ -48,7 +48,7 @@ async function getInstantPrice (currency, interval = 'M1') {
 
   if (base && price && base != 'N/A' && price != 'N/A') {
     delta = +((price - base) * (op === '-' ? -1 : 1) * scale).toFixed(1)
-    direction = delta > 0 ? chalk.bgGreen(' ↑ ') : chalk.bgRed(' ↓ ')
+    state = delta > 0 ? chalk.bgGreen(' ↑ ') : chalk.bgRed(' ↓ ')
   }
   timestamp = Date.now()
   if (getInstantPrice[currency] && getInstantPrice['timestamp'] && price != 'N/A') {
@@ -68,7 +68,7 @@ async function getInstantPrice (currency, interval = 'M1') {
     price,
     entry: base,
     pips: delta,
-    direction,
+    state,
     speed,
   }
 }
