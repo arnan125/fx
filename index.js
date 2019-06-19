@@ -11,11 +11,12 @@ let timestamp
 
 async function getInstantPrice (currency, interval = 'M1') {
   if (!currency) return
-  var base = currency[1] || 'N/A'
+  var base = currency[2] || 'N/A'
   var delta = 'N/A'
   var direction = 'N/A'
   var speed = 'N/A'
-  currency = currency[0]
+  var op = currency[0]
+  currency = currency[1]
   var options = {
     method: 'GET',
     url: 'https://mds-api.forexfactory.com/bars',
@@ -46,7 +47,7 @@ async function getInstantPrice (currency, interval = 'M1') {
   var scale = currency.indexOf('JPY') >= 0 ? 1e2 : 1e4
 
   if (base && price && base != 'N/A' && price != 'N/A') {
-    delta = +((price - base) * scale).toFixed(1)
+    delta = +((price - base) * (op === '-' ? -1 : 1) * scale).toFixed(1)
     direction = delta > 0 ? chalk.bgGreen(' ↑ ') : chalk.bgRed(' ↓ ')
   }
   timestamp = Date.now()
@@ -63,9 +64,10 @@ async function getInstantPrice (currency, interval = 'M1') {
   getInstantPrice[currency] = price
   return {
     currency,
+    op,
     price,
-    base,
-    delta,
+    entry: base,
+    pips: delta,
     direction,
     speed,
   }
@@ -119,12 +121,14 @@ async function start () {
   let cached = await readCache()
   if (currencies.length <= 0) currencies = ['AUD/USD', 'EUR/USD', 'GBP/USD', 'USD/CAD', 'USD/CHF', 'EUR/JPY', 'USD/JPY', 'CHF/JPY', 'AUD/JPY']
   currencies = currencies.map(c => {
-    var matched = String(c).toUpperCase().match(/^([A-Z]{3})(?:\/?)([A-Z]{3})(?:\:([\d.]+))?$/)
-    var currency = matched && [matched[1], matched[2]].join('/')
+    var matched = String(c).toUpperCase().match(/^([-+])([A-Z]{3})(?:\/?)([A-Z]{3})(?:\:([\d.]+))?$/)
+    var currency = matched && [matched[2], matched[3]].join('/')
     if (!/^([A-Z]{3})\/([A-Z]{3})/.test(currency)) return [null, 'N/A']
-    var base = matched && matched[3] || cached[currency] ||  'N/A'
-    if (base && base != 'N/A') cached[currency] = base
-    return [currency, base]
+    var cachedBase = parseFloat(cached[currency])
+    var base = matched && matched[4] || cachedBase ||  'N/A'
+    var op = matched && matched[1] || (isNaN(cachedBase) ? false : cachedBase > 0 ? '+' : '-') || 'N/A'
+    if (base && base != 'N/A') cached[currency] = '' + op + base
+    return [op, currency, base]
   })
 
   let prices
